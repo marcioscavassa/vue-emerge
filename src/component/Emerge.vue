@@ -1,5 +1,5 @@
 <template>
-  <component :is="tag" ref="element" :class="['element', { 'element-animated': isVisible }]" v-bind="componentProps">
+  <component style="opacity: 0" v-cloak :is="tag" ref="element" :class="['element', { 'element-animated': isVisible }]" v-bind="componentProps">
     <slot></slot>
   </component>
 </template>
@@ -85,6 +85,10 @@
 </script>
 
 <style>
+  [v-cloak] {
+    display: none;
+  }
+
   @keyframes emerge-animation {
     from {
       opacity: 0;
