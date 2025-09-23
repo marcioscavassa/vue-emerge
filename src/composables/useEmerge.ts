@@ -48,8 +48,8 @@ export function useEmerge(elementRef: Ref<HTMLElement | ComponentPublicInstance 
       },
       {
         root: rootElement,
-        rootMargin: `0px 0px ${options.triggerOffset || '-100px'} 0px`,
-        threshold: options.threshold ?? 0.1,
+        rootMargin: `0px 0px ${options.triggerOffset} 0px`,
+        threshold: options.threshold,
       }
     );
 

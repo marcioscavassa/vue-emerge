@@ -14,6 +14,7 @@ A lightweight and easy-to-use Vue 3 component to apply an "emerge" animation to 
 - **Performant:** Uses `IntersectionObserver` to trigger animations only when needed, ensuring no performance overhead.
 - **Flexible Triggering:** Animate an element based on its own visibility or the visibility of another element.
 - **Tag Agnostic:** Renders as a `div` by default, but can be configured to render any HTML tag or another component.
+- **Nuxt & SSR Ready:** Designed to work flawlessly in server-side rendering environments.
 
 ---
 
@@ -71,23 +72,58 @@ The easiest way to use `vue-emerge` is by wrapping the content you want to anima
 
 You can customize the animation behavior by passing props to the `<Emerge>` component.
 
-| Prop                | Type                         | Default      | Description                                                                                                                |
-| ------------------- | ---------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `root`              | `string`                     | `undefined`  | A CSS selector for an element to act as the viewport for<br>visibility checking. If omitted, the browser viewport is used. |
-| `triggerOffset`     | `string`                     | `'-100px'`   | Offset for the `IntersectionObserver`'s `rootMargin`.                                                                      |
-| `threshold`         | `number \| number[]`         | `0.1`        | A number or array between 0.0 and 1.0 indicating how much<br>of the element must be visible to trigger the animation.      |
-| `trigger`           | `string`                     | `undefined`  | A CSS selector for an element to act as the visibility trigger.                                                            |
-| `tag`               | `string \| Component`        | `'div'`      | The HTML tag or component to render as the root element.                                                                   |
-| `direction`         | `'vertical' \| 'horizontal'` | `'vertical'` | The direction of the emerge animation.                                                                                     |
-| `moveAmount`        | `string`                     | `'3rem'`     | The initial distance the element is translated (e.g., `'50px'`).                                                           |
-| `animationDuration` | `number`                     | `1000`       | The duration of the animation in milliseconds.                                                                             |
-| `animationDelay`    | `number`                     | `0`          | The delay before the animation starts in milliseconds.                                                                     |
-| `timingFunction`    | `string`                     | `'ease'`     | A valid CSS `animation-timing-function` value<br>(e.g., `'ease-in-out'`, `'cubic-bezier'`).                                |
-| `componentProps`    | `object`                     | `{}`         | Allows passing additional attributes or props to the rendered tag.                                                         |
+| Prop                | Type                         | Default      | Description                                                                                                                                                                                              |
+| ------------------- | ---------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `root`              | `string`                     | `undefined`  | A CSS selector for an element to act as the viewport for visibility checking. If omitted, the browser viewport is used.                                                                                  |
+| `triggerOffset`     | `string`                     | `'0px'`      | Offset for the `IntersectionObserver`'s `rootMargin`.                                                                                                                                                    |
+| `threshold`         | `number \| number[]`         | `0.0`        | A number or array between 0.0 and 1.0 indicating how much of the element must be visible to trigger the animation.                                                                                       |
+| `trigger`           | `string`                     | `undefined`  | A CSS selector for an element to act as the visibility trigger.                                                                                                                                          |
+| `tag`               | `string \| Component`        | `'div'`      | The HTML tag or component to render as the wrapping element. For best compatibility (especially with Nuxt/SSR), it's recommended to use the default slot for complex content like images or form inputs. |
+| `direction`         | `'vertical' \| 'horizontal'` | `'vertical'` | The direction of the emerge animation.                                                                                                                                                                   |
+| `moveAmount`        | `string`                     | `'3rem'`     | The initial distance the element is translated (e.g., `'50px'`).                                                                                                                                         |
+| `finalMoveAmount`   | `string`                     | `'0'`        | The final translated distance for the animation (e.g., `'1rem'`).                                                                                                                                        |
+| `animationDuration` | `number`                     | `1000`       | The duration of the animation in milliseconds.                                                                                                                                                           |
+| `animationDelay`    | `number`                     | `0`          | The delay before the animation starts in milliseconds.                                                                                                                                                   |
+| `timingFunction`    | `string`                     | `'ease'`     | A valid CSS `animation-timing-function` value (e.g., `'ease-in-out'`, `'cubic-bezier'`).                                                                                                                 |
+| `blockHoverOnEnter` | `boolean`                    | `true`       | When true, disables hover and other pointer events during the animation. Set to false to allow interaction while animating.                                                                              |
+| `componentProps`    | `object`                     | `{}`         | Allows passing additional attributes or props to the rendered tag.                                                                                                                                       |
 
 ---
 
 ## Advanced Usage
+
+### Using with Form Inputs (`v-model`)
+
+`vue-emerge` seamlessly works with form inputs. For maximum compatibility and to ensure reactivity, place the input element directly inside the `<Emerge>` component's slot.
+
+```vue
+<template>
+  <p>Your name: {{ name }}</p>
+
+  <Emerge>
+    <input v-model="name" placeholder="Enter your name" />
+  </Emerge>
+
+  <p>Selected option: {{ selected }}</p>
+
+  <Emerge>
+    <select v-model="selected">
+      <option>A</option>
+      <option>B</option>
+    </select>
+  </Emerge>
+</template>
+
+<script setup>
+  import { Emerge } from 'vue-emerge';
+  import { ref } from 'vue';
+
+  const name = ref('');
+  const selected = ref('A');
+</script>
+```
+
+---
 
 ### Customizing the Animation
 
@@ -120,11 +156,10 @@ You can make an element animate when a _different_ element becomes visible by us
 
 <style scoped>
   section {
-    padding-bottom: 10rem;
+    padding: 110vh 0 10rem 0;
   }
   #section-trigger {
     height: 200px;
-    margin-top: 100vh;
   }
 </style>
 ```
@@ -138,9 +173,7 @@ This is useful for delaying an animation until more of the element is on screen.
 ```vue
 <template>
   <section>
-    <Emerge :threshold="0.75">
-      <p>This will only appear when you've scrolled far enough to see most of it.</p>
-    </Emerge>
+    <h2>Scroll Down to See the Animation</h2>
 
     <Emerge :threshold="1">
       <img src="https://placehold.co/400x400" alt="A beautiful landscape" />
@@ -157,7 +190,7 @@ This is useful for delaying an animation until more of the element is on screen.
     padding-bottom: 10rem;
   }
   div {
-    margin-top: 20rem;
+    margin-top: 110vh;
   }
 </style>
 ```
@@ -171,7 +204,7 @@ In this example, all `<Emerge>` components watch a single parent element (`.feat
 ```vue
 <template>
   <section>
-    <h2>Our Features</h2>
+    <h2>Scroll Down to See the Animation</h2>
 
     <div class="features-list">
       <Emerge
@@ -212,7 +245,6 @@ In this example, all `<Emerge>` components watch a single parent element (`.feat
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
-    padding: 1rem;
   }
   .feature-item {
     padding: 1.5rem;
@@ -317,11 +349,13 @@ This can happen if the `moveAmount` value is so large that it pushes the element
   Set a parent or a nearby visible element as the animation trigger. This way, the animation will start when the _trigger_ becomes visible, regardless of the animated element's initial off-screen position.
 
 ```vue
-<div class="visible-container">
-  <Emerge trigger=".visible-container" moveAmount="110vw">
-    <p>Animated Content</p>
-  </Emerge>
-</div>
+<template>
+  <div class="visible-container">
+    <Emerge trigger=".visible-container" moveAmount="110vw">
+      <p>Animated Content</p>
+    </Emerge>
+  </div>
+</template>
 ```
 
 ### 2. A horizontal scrollbar appears during the animation.
@@ -333,14 +367,69 @@ This is expected CSS behavior when an element is animated from an off-screen pos
 To fix this, apply overflow-x: hidden; to a higher-level container. Based on your layout, you must choose a container that is wide enough to contain the entire animation. If the container is too narrow, the animation effect may be visually cut off. A full-width section or a main page wrapper is often a safe choice.
 
 ```vue
-<div style="overflow-x: hidden;">
-  <section>
-    <Emerge direction="horizontal" moveAmount="100px">
-      <p>This content will not cause a scrollbar.</p>
-    </Emerge>
-  </section>
-</div>
+<template>
+  <div style="overflow-x: hidden;">
+    <section>
+      <Emerge direction="horizontal" moveAmount="100px">
+        <p>This content will not cause a scrollbar.</p>
+      </Emerge>
+    </section>
+  </div>
+</template>
 ```
+
+### 3. Using with Nuxt.js & SSR
+
+`vue-emerge` is fully compatible with Nuxt 3 and Server-Side Rendering (SSR). To ensure a smooth experience and prevent common "hydration mismatch" errors, it's crucial to follow the recommended composition pattern.
+
+Hydration errors occur when the HTML rendered on the server is different from what the client-side Vue app expects. Self-closing tags (like `<img>`) and complex form elements are common sources of these issues.
+
+The solution is to **always pass these elements into the <Emerge> component's default slot.**
+
+#### Example: Images
+
+**Incorrect usage (may cause hydration errors in Nuxt):**
+
+```vue
+<template>
+  <Emerge tag="img" src="/path/to/image.png" />
+</template>
+```
+
+**Correct usage (SSR-safe):**
+
+```vue
+<template>
+  <Emerge>
+    <img src="/path/to/image.png" />
+  </Emerge>
+</template>
+```
+
+#### Example: Form Inputs with `v-model`
+
+Similarly, to guarantee correct reactivity and avoid hydration issues, always place your form elements inside the slot.
+
+**Correct usage:**
+
+```vue
+<template>
+  <p>Your message: {{ message }}</p>
+
+  <Emerge>
+    <textarea v-model="message"></textarea>
+  </Emerge>
+</template>
+
+<script setup>
+  import { Emerge } from 'vue-emerge';
+  import { ref } from 'vue';
+
+  const message = ref('');
+</script>
+```
+
+By following this pattern, you ensure that the server and client render identical DOM structures, leading to a perfectly smooth and error-free animation experience in your Nuxt application.
 
 ---
 
