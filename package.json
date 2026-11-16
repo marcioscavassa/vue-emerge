@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "private": false,
   "type": "module",
-  "description": "A simple Vue component to animate elements when they enter the viewport on scroll.",
+  "description": "A lightweight Vue 3 component, directive and composable to animate elements when they enter the viewport on scroll.",
   "keywords": [
     "vue",
     "vue3",
@@ -27,53 +27,105 @@
     "typescript",
     "motion",
     "transition",
-    "effects"
+    "effects",
+    "directive",
+    "prefers-reduced-motion"
   ],
   "author": "Marcio Scavassa <npm@marcioscavassa.dev>",
   "license": "MIT",
+  "homepage": "https://github.com/marcioscavassa/vue-emerge#readme",
   "repository": {
     "type": "git",
     "url": "https://github.com/marcioscavassa/vue-emerge.git"
   },
+  "bugs": {
+    "url": "https://github.com/marcioscavassa/vue-emerge/issues"
+  },
   "main": "./dist/vue-emerge.umd.js",
   "module": "./dist/vue-emerge.es.js",
   "types": "./dist/index.d.ts",
+  "unpkg": "./dist/vue-emerge.umd.js",
+  "jsdelivr": "./dist/vue-emerge.umd.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/vue-emerge.es.js",
-      "require": "./dist/vue-emerge.umd.js"
-    }
+      "require": "./dist/vue-emerge.umd.cjs",
+      "default": "./dist/vue-emerge.es.js"
+    },
+    "./no-css": {
+      "types": "./dist/no-css.d.ts",
+      "import": "./dist/no-css.es.js",
+      "default": "./dist/no-css.es.js"
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
   },
+  "sideEffects": [
+    "./dist/vue-emerge.es.js",
+    "./dist/vue-emerge.umd.js",
+    "*.css"
+  ],
   "files": [
     "dist/**"
   ],
   "scripts": {
     "dev": "vite playground",
-    "build": "vite build",
+    "build": "vite build && vite build --mode no-css",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit -p tsconfig.json && vue-tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:browser": "vitest run --project browser",
-    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+    "prepublishOnly": "npm run typecheck && npm test && npm run build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "size": "size-limit"
   },
   "peerDependencies": {
     "vue": "^3.2.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@size-limit/file": "^12.1.0",
     "@types/node": "^24.5.1",
     "@vitejs/plugin-vue": "^6.0.11",
     "@vitest/browser-playwright": "^4.1.12",
     "@vue/test-utils": "^2.6.0",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.12.1",
+    "globals": "^17.14.0",
     "happy-dom": "^21.0.4",
     "playwright": "^1.63.0",
+    "prettier": "^3.10.1",
+    "size-limit": "^12.1.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.73.0",
     "vite": "^7.3.8",
     "vite-plugin-css-injected-by-js": "^3.5.2",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.1.12",
     "vue": "^3.5.45",
+    "vue-eslint-parser": "^10.4.2",
     "vue-tsc": "^3.3.14"
-  }
+  },
+  "size-limit": [
+    {
+      "name": "ES build",
+      "path": "dist/vue-emerge.es.js",
+      "limit": "5 kB"
+    },
+    {
+      "name": "UMD build",
+      "path": "dist/vue-emerge.umd.js",
+      "limit": "5 kB"
+    },
+    {
+      "name": "no-css build",
+      "path": "dist/no-css.es.js",
+      "limit": "4.5 kB"
+    }
+  ]
 }
