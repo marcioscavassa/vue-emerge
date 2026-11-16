@@ -1,181 +1,195 @@
 <template>
-  <component
-    :is="tag"
-    ref="element"
-    v-cloak
-    style="opacity: 0"
-    :style="componentStyles"
-    :class="['vue-emerge', { 'vue-emerge--animated': isVisible, 'vue-emerge--animation-completed': animationCompleted }]"
-    v-bind="componentProps"
-  >
+  <component :is="tag" ref="element" :style="componentStyles" :class="classes" v-bind="componentProps">
     <slot></slot>
   </component>
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, computed, watch, type Component, type PropType } from 'vue';
+  import { computed, onMounted, onUnmounted, ref, watch, type Component, type PropType } from 'vue';
   import { useEmerge } from '../composables/useEmerge';
+  import {
+    ANIMATION_NAME,
+    animationTimeout,
+    animationVariables,
+    endsAtRest,
+    initialTransform,
+    type AnimationDirection,
+    type AnimationOptions,
+  } from '../core/animation';
+  import { globalDefault } from '../core/defaults';
+  import { resolveElement } from '../core/utils';
 
-  type AnimationDirection = 'vertical' | 'horizontal';
+  defineOptions({ name: 'Emerge' });
 
   const props = defineProps({
     root: {
       type: String,
-      default: undefined,
+      default: () => globalDefault('root', undefined),
     },
     triggerOffset: {
       type: String,
-      default: '0px',
+      default: () => globalDefault('triggerOffset', '0px'),
     },
     threshold: {
       type: [Number, Array] as PropType<number | number[]>,
-      default: 0.0,
+      default: () => globalDefault('threshold', 0),
       validator: (value: number | number[]) => {
-        const isValidNumber = (num: number) => num >= 0 && num <= 1;
+        const isValidNumber = (num: number) => typeof num === 'number' && num >= 0 && num <= 1;
         return Array.isArray(value) ? value.every(isValidNumber) : isValidNumber(value);
       },
     },
     trigger: {
       type: String,
-      default: undefined,
+      default: () => globalDefault('trigger', undefined),
     },
     tag: {
       type: [String, Object] as PropType<string | Component>,
-      default: 'div',
+      default: () => globalDefault('tag', 'div'),
     },
     direction: {
       type: String as PropType<AnimationDirection>,
-      default: 'vertical',
+      default: () => globalDefault('direction', 'vertical'),
       validator: (value: string) => ['vertical', 'horizontal'].includes(value),
     },
     moveAmount: {
       type: String,
-      default: '3rem',
+      default: () => globalDefault('moveAmount', '3rem'),
     },
     finalMoveAmount: {
       type: String,
-      default: '0',
+      default: () => globalDefault('finalMoveAmount', '0'),
     },
     animationDuration: {
       type: Number,
-      default: 1000,
+      default: () => globalDefault('animationDuration', 1000),
     },
     animationDelay: {
       type: Number,
-      default: 0,
+      default: () => globalDefault('animationDelay', 0),
     },
     timingFunction: {
       type: String,
-      default: 'ease',
+      default: () => globalDefault('timingFunction', 'ease'),
     },
     blockHoverOnEnter: {
       type: Boolean,
-      default: true,
+      default: () => globalDefault('blockHoverOnEnter', true),
     },
     componentProps: {
-      type: Object,
+      type: Object as PropType<Record<string, unknown>>,
       default: () => ({}),
+    },
+    /** When `false`, the element animates again every time it re-enters the viewport. */
+    once: {
+      type: Boolean,
+      default: () => globalDefault('once', true),
+    },
+    /** Shows the content immediately, without animation. */
+    disabled: {
+      type: Boolean,
+      default: false,
     },
   });
 
+  const emit = defineEmits<{
+    /** The element entered the viewport and its animation started. */
+    (e: 'visible'): void;
+    /** The entrance animation finished. */
+    (e: 'animation-end'): void;
+  }>();
+
+  type State = 'hidden' | 'animating' | 'completed';
+
   const element = ref<HTMLElement | null>(null);
-  const animationCompleted = ref(false);
+  const state = ref<State>('hidden');
 
-  const animationProps = reactive({
-    name: 'vue-emerge-animation',
-    duration: `${props.animationDuration}ms`,
-    delay: `${props.animationDelay}ms`,
+  const animation = computed<AnimationOptions>(() => ({
+    direction: props.direction,
+    moveAmount: props.moveAmount,
+    finalMoveAmount: props.finalMoveAmount,
+    animationDuration: props.animationDuration,
+    animationDelay: props.animationDelay,
     timingFunction: props.timingFunction,
-  });
+    blockHoverOnEnter: props.blockHoverOnEnter,
+  }));
 
-  const { isVisible } = useEmerge(element, {
+  const { isVisible } = useEmerge(element, () => ({
     root: props.root,
     triggerOffset: props.triggerOffset,
     threshold: props.threshold,
     trigger: props.trigger,
-  });
+    once: props.once,
+  }));
 
-  const onAnimationEnd = () => {
-    animationCompleted.value = true;
+  let fallbackTimer: ReturnType<typeof setTimeout> | undefined;
+  const clearFallback = () => {
+    if (fallbackTimer !== undefined) clearTimeout(fallbackTimer);
+    fallbackTimer = undefined;
   };
 
-  watch(
-    isVisible,
-    (newValue) => {
-      if (!!newValue) {
-        if (!props.blockHoverOnEnter) return;
-        setTimeout(() => {
-          onAnimationEnd();
-        }, props.animationDuration + props.animationDelay);
-      }
+  const complete = () => {
+    clearFallback();
+    if (state.value !== 'animating') return;
+    state.value = 'completed';
+    emit('animation-end');
+  };
+
+  const start = () => {
+    if (state.value !== 'hidden') return;
+    state.value = 'animating';
+    emit('visible');
+    // Safety net in case `animationend` never fires (e.g. the animation is overridden by user CSS).
+    fallbackTimer = setTimeout(complete, animationTimeout(animation.value));
+  };
+
+  const reset = () => {
+    clearFallback();
+    state.value = 'hidden';
+  };
+
+  watch(isVisible, (visible) => (visible ? start() : reset()));
+
+  const onAnimationEnd = (event: Event) => {
+    const e = event as AnimationEvent;
+    if (e.target === e.currentTarget && e.animationName === ANIMATION_NAME) complete();
+  };
+
+  // Keyboard users may focus content before it is revealed: reveal it right away.
+  const onFocusIn = () => {
+    if (state.value === 'hidden' && !props.disabled) isVisible.value = true;
+  };
+
+  let listenedElement: Element | null = null;
+  onMounted(() => {
+    listenedElement = resolveElement(element.value);
+    listenedElement?.addEventListener('animationend', onAnimationEnd);
+    listenedElement?.addEventListener('focusin', onFocusIn);
+  });
+
+  onUnmounted(() => {
+    clearFallback();
+    listenedElement?.removeEventListener('animationend', onAnimationEnd);
+    listenedElement?.removeEventListener('focusin', onFocusIn);
+  });
+
+  const isSettled = computed(() => state.value === 'completed' && endsAtRest(animation.value));
+
+  const classes = computed(() => [
+    'vue-emerge',
+    {
+      'vue-emerge--animated': state.value !== 'hidden' && !props.disabled,
+      'vue-emerge--animation-completed': state.value === 'completed' && !props.disabled,
+      'vue-emerge--settled': isSettled.value && !props.disabled,
+      'vue-emerge--disabled': props.disabled,
     },
-    { once: true }
-  );
-
-  const initialTransform = computed(() => {
-    const axis = props.direction === 'horizontal' ? 'X' : 'Y';
-    return `translate${axis}(${props.moveAmount})`;
-  });
-
-  const finalTransform = computed(() => {
-    if (props.finalMoveAmount === '0' || !props.finalMoveAmount) {
-      return 'translate(0, 0)';
-    }
-    const axis = props.direction === 'horizontal' ? 'X' : 'Y';
-    return `translate${axis}(${props.finalMoveAmount})`;
-  });
-
-  const pointerEventsStyle = computed(() => (props.blockHoverOnEnter ? 'none' : 'auto'));
+  ]);
 
   const componentStyles = computed(() => {
-    const cssVariables = {
-      '--vue-emerge-initial-transform': initialTransform.value,
-      '--vue-emerge-final-transform': finalTransform.value,
-      '--vue-emerge-animation-name': animationProps.name,
-      '--vue-emerge-animation-duration': animationProps.duration,
-      '--vue-emerge-animation-delay': animationProps.delay,
-      '--vue-emerge-timing-function': animationProps.timingFunction,
-      '--vue-emerge-pointer-events': pointerEventsStyle.value,
-    };
-    if (!isVisible.value) {
-      return {
-        transform: initialTransform.value,
-        ...cssVariables,
-      };
+    const variables = animationVariables(animation.value);
+    if (props.disabled || isSettled.value) return variables;
+    if (state.value === 'hidden') {
+      return { opacity: '0', transform: initialTransform(animation.value), ...variables };
     }
-    return cssVariables;
+    return { opacity: '0', ...variables };
   });
 </script>
-
-<style>
-  [v-cloak] {
-    display: none;
-  }
-
-  @keyframes vue-emerge-animation {
-    from {
-      opacity: 0;
-      transform: var(--vue-emerge-initial-transform);
-    }
-
-    to {
-      opacity: 1;
-      transform: var(--vue-emerge-final-transform);
-    }
-  }
-</style>
-
-<style scoped>
-  .vue-emerge--animated {
-    animation-name: var(--vue-emerge-animation-name);
-    animation-duration: var(--vue-emerge-animation-duration);
-    animation-timing-function: var(--vue-emerge-timing-function);
-    animation-fill-mode: forwards;
-    animation-delay: var(--vue-emerge-animation-delay);
-    pointer-events: var(--vue-emerge-pointer-events);
-  }
-
-  .vue-emerge--animated.vue-emerge--animation-completed {
-    pointer-events: auto;
-  }
-</style>

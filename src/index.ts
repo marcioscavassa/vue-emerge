@@ -1,11 +1,6 @@
-import Emerge from './component/Emerge.vue';
+// Default entry: injects the stylesheet automatically when imported.
+// For strict Content Security Policies use `vue-emerge/no-css` together with `vue-emerge/style.css`.
+import './style.css';
 
-export { Emerge };
-
-const plugin = {
-  install(app: any) {
-    app.component('Emerge', Emerge);
-  },
-};
-
-export default plugin;
+export * from './core';
+export { default } from './core';

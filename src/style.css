@@ -1,0 +1,42 @@
+@keyframes vue-emerge-animation {
+  from {
+    opacity: 0;
+    transform: var(--vue-emerge-initial-transform);
+  }
+
+  to {
+    opacity: 1;
+    transform: var(--vue-emerge-final-transform);
+  }
+}
+
+.vue-emerge--animated {
+  animation-name: var(--vue-emerge-animation-name);
+  animation-duration: var(--vue-emerge-animation-duration);
+  animation-timing-function: var(--vue-emerge-timing-function);
+  animation-fill-mode: both;
+  animation-delay: var(--vue-emerge-animation-delay);
+  pointer-events: var(--vue-emerge-pointer-events);
+}
+
+.vue-emerge--animated.vue-emerge--animation-completed {
+  pointer-events: auto;
+}
+
+/* Animation finished at the natural position: drop the animation so no transform
+   remains (a leftover transform breaks position: fixed descendants and z-index). */
+.vue-emerge--animated.vue-emerge--settled {
+  animation: none;
+  transform: none;
+}
+
+/* Respect the user's reduced motion preference: fade only, no movement. */
+@media (prefers-reduced-motion: reduce) {
+  .vue-emerge {
+    --vue-emerge-initial-transform: var(--vue-emerge-final-transform) !important;
+  }
+
+  .vue-emerge:not(.vue-emerge--animated) {
+    transform: var(--vue-emerge-final-transform) !important;
+  }
+}

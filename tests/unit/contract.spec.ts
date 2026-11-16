@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { createApp, createSSRApp, h } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import { mount } from '@vue/test-utils';
-import VueEmerge, { Emerge } from '../../src/index';
+import VueEmerge, { Emerge } from 'vue-emerge';
 
 const EXPECTED_DEFAULTS: Record<string, unknown> = {
   root: undefined,
@@ -41,13 +41,14 @@ describe('public API contract', () => {
   });
 
   it('keeps every existing prop with the same default value', () => {
-    const props = (Emerge as any).props as Record<string, { default?: unknown }>;
+    const declared = (Emerge as any).props as Record<string, unknown>;
+    const wrapper = mount(Emerge);
+    const resolved = wrapper.vm.$props as Record<string, unknown>;
     for (const [name, expected] of Object.entries(EXPECTED_DEFAULTS)) {
-      expect(props, `prop "${name}" must exist`).toHaveProperty(name);
-      const def = props[name].default;
-      const value = typeof def === 'function' && name === 'componentProps' ? (def as () => unknown)() : def;
-      expect(value, `default of "${name}"`).toEqual(expected);
+      expect(declared, `prop "${name}" must exist`).toHaveProperty(name);
+      expect(resolved[name], `default of "${name}"`).toEqual(expected);
     }
+    wrapper.unmount();
   });
 
   it('renders the same initial client markup', () => {
