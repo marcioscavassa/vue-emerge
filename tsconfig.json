@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2020",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ESNext", "DOM"],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
@@ -15,8 +15,7 @@
     "declaration": true,
     "declarationDir": "./dist",
     "emitDeclarationOnly": true,
-    "types": ["node"]
+    "types": []
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"]
 }
