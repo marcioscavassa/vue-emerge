@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. The project follows [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.3.0 - 2026-11-17
 
 No breaking changes: props, defaults, the `Emerge` export and `app.use(VueEmerge)` work as before.
 
